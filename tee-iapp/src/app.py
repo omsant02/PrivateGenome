@@ -7,10 +7,12 @@ import joblib
 import pandas as pd
 import numpy as np
 
+# Import the iExec deserializer (this should be provided by iExec framework)
 try:
-    from deserializer import getValue
+    from deserializer import getValue  # iExec's deserializer module
     DESERIALIZER_AVAILABLE = True
 except ImportError:
+    # Fallback to our custom protected_data module for local testing
     import protected_data
     DESERIALIZER_AVAILABLE = False
     print("Using fallback protected_data module for local testing")
@@ -27,11 +29,15 @@ try:
     if len(args) > 0:
         messages.append(" ".join(args))
 
+    # Try to get genomic data from protected data using proper iExec deserializer
     genomic_data_from_protected = None
     try:
         if DESERIALIZER_AVAILABLE:
+            # Use iExec's official deserializer
             print("Using iExec deserializer for protected data")
             
+            # For nested genomic data structure
+            # Example: { "genome": { "rs1801133": "AA", "rs7412": "CC", "rs429358": "TT" } }
             rs1801133_protected = getValue('genome.rs1801133', 'string')
             rs7412_protected = getValue('genome.rs7412', 'string') 
             rs429358_protected = getValue('genome.rs429358', 'string')
@@ -44,9 +50,11 @@ try:
             print(f"Got protected genomic data: {genomic_data_from_protected}")
             
         else:
+            # Fallback for local testing
             print("Attempting to use fallback protected data method")
             protected_text = protected_data.getValue('genomicData', 'string')
             
+            # Try to parse as JSON if it's structured data
             try:
                 genomic_data_from_protected = json.loads(protected_text)
                 print(f"Parsed genomic data from protected storage: {genomic_data_from_protected}")
@@ -57,6 +65,7 @@ try:
     except Exception as e:
         print(f'Protected data not available or error: {e}')
 
+    # Handle other iExec inputs
     IEXEC_INPUT_FILES_NUMBER = int(os.getenv("IEXEC_INPUT_FILES_NUMBER", 0))
     IEXEC_IN = os.getenv("IEXEC_IN")
     print(f"Received {IEXEC_INPUT_FILES_NUMBER} input files")
@@ -71,6 +80,7 @@ try:
             shutil.copy(input_file_path, os.path.join(
                 os.getenv("IEXEC_OUT", ""), f"inputFile_{i}"))
 
+    # Handle secrets
     IEXEC_APP_DEVELOPER_SECRET = os.getenv("IEXEC_APP_DEVELOPER_SECRET")
     if IEXEC_APP_DEVELOPER_SECRET:
         redacted_app_secret = '*' * len(IEXEC_APP_DEVELOPER_SECRET)
@@ -126,7 +136,7 @@ try:
             'AA': 0, 'AG': 1, 'GA': 1, 'GG': 2,
             'CC': 0, 'CT': 1, 'TC': 1, 'TT': 2,
             'AC': 1, 'CA': 1, 'GT': 1, 'TG': 1,
-            'AT': 1, 'TA': 1  
+            'AT': 1, 'TA': 1  # Added missing combinations
         }
         
         try:
@@ -149,6 +159,7 @@ Input received ({input_source}):
 """
             print(f"Invalid genotype input: {e}")
         else:
+            # Create DataFrame for AI model
             input_data = pd.DataFrame([{
                 'rs1801133': rs1801133_encoded,
                 'rs7412': rs7412_encoded,
@@ -158,10 +169,12 @@ Input received ({input_source}):
             print(f"Input data shape: {input_data.shape}")
             print(f"Input data: {input_data.iloc[0].to_dict()}")
             
+            # Load and run AI model
             try:
                 model_path = '/app/src/genetic_risk_model.pkl'
                 print(f"Loading AI model from {model_path}")
                 
+                # Check if model file exists
                 if not os.path.exists(model_path):
                     raise FileNotFoundError(f"Model file not found at {model_path}")
                 
@@ -169,10 +182,12 @@ Input received ({input_source}):
                 print("AI model loaded successfully")
                 print(f"Model type: {type(model)}")
                 
+                # Make prediction
                 prediction = model.predict(input_data)
                 risk_prob = model.predict_proba(input_data)[:, 1][0]
                 risk_class = 'High Risk' if prediction[0] == 1 else 'Low Risk'
                 
+                # Enhanced result with privacy indicators
                 privacy_badge = "🔒 PROTECTED DATA" if input_source == "protected_data" else "📝 PUBLIC ARGS"
                 
                 result_text = f"""🧬 AI-POWERED GENOME RISK ASSESSMENT 🧬
@@ -241,11 +256,13 @@ Debug info:
                 print("Full traceback:")
                 traceback.print_exc()
         
+        # Write result to file
         with open(IEXEC_OUT + '/result.txt', 'w') as f:
             f.write(result_text)
         computed_json = {'deterministic-output-path': IEXEC_OUT + '/result.txt'}
         
     else:
+        # Fallback to original ASCII art logic if no genomic data
         txt = f"Hello, {' '.join(messages) if len(messages) > 0 else 'AI-Powered Private Genome'}!"
         ascii_art_text = Figlet().renderText(txt)
         print(ascii_art_text)
@@ -277,6 +294,7 @@ except Exception as e:
     print("Full traceback:")
     traceback.print_exc()
     
+    # Create error result
     error_result = f"""❌ APPLICATION ERROR
 ===================
 Error: {e}
