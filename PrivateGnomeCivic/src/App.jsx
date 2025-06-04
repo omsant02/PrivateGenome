@@ -113,8 +113,16 @@ function AppContent() {
       />
       <div className="container mt-4">
         {view === 'wallet' && (
-          <div className="card p-4" style={{ color: 'black', backgroundColor: '#282c34', borderColor: '#282c34' }}>
-            <UserButton />
+          <div className="card p-4" style={{
+            margin: 10,
+            fontSize: '2rem',
+            fontWeight: 600,
+            background: 'linear-gradient(to right, #6366f1, #8b5cf6)',
+            letterSpacing: '-0.025em'
+          }}>
+            <div className="user-button-container">
+              <UserButton/>
+            </div>
             {!isLoggedIn ? (
               <div className="card-body">
                 <h2 className="card-title" style={{ color: 'white' }}>Please Sign In</h2>
