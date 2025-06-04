@@ -1,0 +1,105 @@
+/* App.css */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #020203;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  color: #3f51b5;
+  text-align: center;
+  font-size: 3rem;
+  margin-top: 2rem;
+}
+
+div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+button {
+  background-color: #3f51b5;
+  color: black;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background-color: #2c387e;
+  transform: translateY(-2px);
+}
+
+p {
+  font-size: 1.1rem;
+  color: #555;
+  margin: 0.5rem 0;
+  text-align: center;
+}
+
+strong {
+  font-weight: 700;
+  color: #3f51b5;
+}
+
+.wallet-info {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+}
+
+.wallet-info p {
+  margin-bottom: 1rem;
+}
+
+.wallet-info .wallet-address {
+  font-size: 0.9rem;
+  font-family: 'Courier New', monospace;
+  background-color: #f1f1f1;
+  padding: 8px;
+  border-radius: 5px;
+}
+
+.wallet-info .balance {
+  font-weight: 600;
+  color: #4caf50;
+}
+
+.user-btn {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 2rem;
+}
+
+/* Button with the connect wallet option */
+.connect-btn {
+  background-color: #00bcd4;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  color: black;
+  font-weight: bold;
+}
+
+.connect-btn:hover {
+  background-color: #0097a7;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}

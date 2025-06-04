@@ -1,0 +1,28 @@
+.civic-button {
+  color: white !important;
+  background-color: #282c34 !important;
+}
+
+.civic-dropdown {
+  color: white !important;
+  background-color: #282c34 !important;
+}
+
+/* Override any text in the UserButton component */
+.civic-button * {
+  color: white !important;
+}
+
+.card-title, .card-body {
+  color: white !important;
+}
+
+/* Style for the dropdown menu items */
+.civic-dropdown-menu {
+  background-color: #282c34 !important;
+  border-color: #373d48 !important;
+}
+
+.civic-dropdown-item:hover {
+  background-color: #373d48 !important;
+} 
