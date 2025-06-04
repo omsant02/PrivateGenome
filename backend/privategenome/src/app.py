@@ -95,7 +95,7 @@ try:
                 'rs7412': rs7412_encoded,
                 'rs429358': rs429358_encoded,
             }])
-            model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ai-model/genetic_risk_model.pkl'))
+            model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'genetic_risk_model.pkl'))
             model = joblib.load(model_path)
             prediction = model.predict(input_data)
             risk_prob = model.predict_proba(input_data)[:, 1][0]
