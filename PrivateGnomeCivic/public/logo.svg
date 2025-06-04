@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient definition -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Main circle -->
+  <circle cx="16" cy="16" r="15" fill="url(#gradient)" opacity="0.1" />
+  
+  <!-- Gnome hat -->
+  <path d="M16 4C12 4 9 7 9 11C9 15 12 18 16 18C20 18 23 15 23 11C23 7 20 4 16 4Z" fill="url(#gradient)" />
+  
+  <!-- Gnome body -->
+  <path d="M8 20C8 16 11 14 16 14C21 14 24 16 24 20V26C24 27.1 23.1 28 22 28H10C8.9 28 8 27.1 8 26V20Z" fill="url(#gradient)" />
+  
+  <!-- Lock symbol -->
+  <circle cx="16" cy="21" r="2" fill="white" />
+  <rect x="14" y="21" width="4" height="4" rx="1" fill="white" />
+</svg> 
