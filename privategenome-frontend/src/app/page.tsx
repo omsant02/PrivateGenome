@@ -1,103 +1,319 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState } from 'react';
+import { IExecDataProtector } from '@iexec/dataprotector';
+
+interface GeneticData {
+  [key: string]: any;
+  age: number;
+  gender: string;
+  rs1801133: string;
+  rs7412: string;
+  rs429358: string;
+}
+
+interface AnalysisResult {
+  [key: string]: any;
+  risk_class?: string;
+  risk_probability?: number;
+  age?: number;
+  gender?: string;
+  snps?: {
+    rs1801133: string;
+    rs7412: string;
+    rs429358: string;
+  };
+  recommendations?: string[];
+}
+
+export default function HomePage() {
+  const [isConnected, setIsConnected] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [results, setResults] = useState<AnalysisResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [dataProtector, setDataProtector] = useState<IExecDataProtector | null>(null);
+
+  const [formData, setFormData] = useState({
+    age: '',
+    gender: 'male',
+    rs1801133: '',
+    rs7412: '',
+    rs429358: ''
+  });
+
+  const connectWallet = async () => {
+    try {
+      if (typeof window !== 'undefined' && (window as any).ethereum) {
+        await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+        
+        const dp = new IExecDataProtector((window as any).ethereum);
+        setDataProtector(dp);
+        setIsConnected(true);
+        setError(null);
+      } else {
+        setError('Please install MetaMask');
+      }
+    } catch (err) {
+      setError('Failed to connect wallet: ' + (err as Error).message);
+    }
+  };
+
+  // Process genetic data
+  const analyzeGenetics = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dataProtector) return;
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      console.log('🔬 Starting genetic analysis...');
+
+      // Prepare genetic data
+      const geneticData: GeneticData = {
+        age: parseInt(formData.age),
+        gender: formData.gender,
+        rs1801133: formData.rs1801133.toUpperCase(),
+        rs7412: formData.rs7412.toUpperCase(),
+        rs429358: formData.rs429358.toUpperCase()
+      };
+
+      console.log('📊 Genetic data:', geneticData);
+
+      // Step 1: Protect the data
+      console.log('🔒 Protecting data with DataProtector...');
+      const protectedData = await dataProtector.core.protectData({
+        data: geneticData,
+        name: `genetic-analysis-${Date.now()}`
+      });
+
+      console.log('✅ Data protected:', protectedData.address);
+
+      // Step 2: Process in TEE
+      console.log('🤖 Processing in TEE...');
+      const result = await dataProtector.core.processProtectedData({
+        protectedData: protectedData.address,
+        app: process.env.NEXT_PUBLIC_IEXEC_APP_ADDRESS!,
+        workerpool: process.env.NEXT_PUBLIC_WORKERPOOL_ADDRESS!,
+        maxPrice: 0,
+        onStatusUpdate: (status) => {
+          console.log('📊 TEE Status:', status);
+          if (status.title) {
+            console.log(`🔄 ${status.title}: ${status.isDone ? 'Complete' : 'In Progress'}`);
+          }
+        }
+      });
+
+      console.log('✅ Analysis complete:', result);
+      setResults(result);
+
+    } catch (err) {
+      console.error('❌ Error:', err);
+      setError('Analysis failed: ' + (err as Error).message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Fill sample data
+  const fillSampleData = () => {
+    setFormData({
+      age: '35',
+      gender: 'male',
+      rs1801133: 'AG',
+      rs7412: 'TC',
+      rs429358: 'CT'
+    });
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+      <h1>🧬 PrivateGenome - Genetic Risk Analysis</h1>
+      <p>AI-powered genetic analysis using iExec TEE</p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {!isConnected ? (
+        <div style={{ textAlign: 'center', margin: '40px 0' }}>
+          <h2>Connect Your Wallet</h2>
+          <button 
+            onClick={connectWallet}
+            style={{
+              padding: '12px 24px',
+              fontSize: '16px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            Connect MetaMask
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      ) : results ? (
+        <div>
+          <h2>🎉 Analysis Results</h2>
+          <div style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+            <h3>Risk Classification: {results.risk_class || 'N/A'}</h3>
+            <p>Risk Probability: {results.risk_probability ? Math.round(results.risk_probability * 100) : 0}%</p>
+            <p>Age: {results.age || 'N/A'}</p>
+            <p>Gender: {results.gender || 'N/A'}</p>
+          </div>
+
+          <div style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+            <h3>Genetic Markers</h3>
+            <p>rs1801133: {results.snps?.rs1801133 || 'N/A'}</p>
+            <p>rs7412: {results.snps?.rs7412 || 'N/A'}</p>
+            <p>rs429358: {results.snps?.rs429358 || 'N/A'}</p>
+          </div>
+
+          {results.recommendations && (
+            <div style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+              <h3>Recommendations</h3>
+              <ul>
+                {results.recommendations.map((rec: string, index: number) => (
+                  <li key={index}>{rec}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <button 
+            onClick={() => setResults(null)}
+            style={{
+              padding: '12px 24px',
+              fontSize: '16px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Analyze Another Sample
+          </button>
+        </div>
+      ) : (
+        <div>
+          <h2>Enter Genetic Data</h2>
+          <form onSubmit={analyzeGenetics} style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '4px' }}>Age:</label>
+              <input
+                type="number"
+                value={formData.age}
+                onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
+                required
+                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '4px' }}>Gender:</label>
+              <select
+                value={formData.gender}
+                onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '4px' }}>rs1801133 (e.g., AA, AG, GG):</label>
+              <input
+                type="text"
+                value={formData.rs1801133}
+                onChange={(e) => setFormData(prev => ({ ...prev, rs1801133: e.target.value }))}
+                required
+                maxLength={2}
+                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '4px' }}>rs7412 (e.g., CC, CT, TT):</label>
+              <input
+                type="text"
+                value={formData.rs7412}
+                onChange={(e) => setFormData(prev => ({ ...prev, rs7412: e.target.value }))}
+                required
+                maxLength={2}
+                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '4px' }}>rs429358 (e.g., CC, CT, TT):</label>
+              <input
+                type="text"
+                value={formData.rs429358}
+                onChange={(e) => setFormData(prev => ({ ...prev, rs429358: e.target.value }))}
+                required
+                maxLength={2}
+                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <button 
+                type="button" 
+                onClick={fillSampleData}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Fill Sample Data
+              </button>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={isProcessing}
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: '16px',
+                backgroundColor: isProcessing ? '#6c757d' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: isProcessing ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {isProcessing ? '🤖 Analyzing in TEE...' : '🧬 Analyze My Genetic Risk'}
+            </button>
+          </form>
+
+          {error && (
+            <div style={{ 
+              backgroundColor: '#f8d7da', 
+              color: '#721c24', 
+              padding: '12px', 
+              borderRadius: '4px', 
+              marginTop: '16px' 
+            }}>
+              ❌ {error}
+            </div>
+          )}
+
+          <div style={{ 
+            backgroundColor: '#d1ecf1', 
+            color: '#0c5460', 
+            padding: '12px', 
+            borderRadius: '4px', 
+            marginTop: '16px' 
+          }}>
+            🔒 Your data is encrypted and processed in a Trusted Execution Environment (TEE)
+          </div>
+        </div>
+      )}
     </div>
   );
 }
