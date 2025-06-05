@@ -1,7 +1,0 @@
-# Compatible versions for Python 3.11 and iExec TEE
-pyfiglet==1.0.2
-borsh-construct==0.1.0
-joblib==1.4.2
-pandas==2.1.4
-scikit-learn==1.4.2
-numpy==1.26.4
