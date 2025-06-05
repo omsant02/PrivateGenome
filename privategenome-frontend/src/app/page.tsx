@@ -1,43 +1,47 @@
 'use client';
 
 import { useState } from 'react';
-import { IExecDataProtector } from '@iexec/dataprotector';
 
-// Define the genetic data structure matching backend expectations
-interface GeneticData {
-  [key: string]: any;
-  rs1801133: string;
-  rs7412: string;
-  rs429358: string;
-}
-
-// Define result interface to handle iExec response
-interface AnalysisResult {
-  [key: string]: any;
-  result?: any;
-  error?: string;
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
 }
 
 export default function HomePage() {
   const [isConnected, setIsConnected] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [results, setResults] = useState<AnalysisResult | null>(null);
+  const [results, setResults] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [dataProtector, setDataProtector] = useState<IExecDataProtector | null>(null);
+  const [dataProtector, setDataProtector] = useState<any>(null);
 
   const [formData, setFormData] = useState({
+    age: '',
+    gender: 'male',
     rs1801133: '',
     rs7412: '',
     rs429358: ''
   });
 
+  // Define the genetic data interface as per iExec docs
+  interface GeneticData {
+    age: number;
+    gender: string;
+    rs1801133: string;
+    rs7412: string;
+    rs429358: string;
+  }
+
   const connectWallet = async () => {
     try {
-      if (typeof window !== 'undefined' && (window as any).ethereum) {
-        await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+      if (window?.ethereum) {
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
         
-        // Configure DataProtector for TDX
-        const dp = new IExecDataProtector((window as any).ethereum, {
+        // Dynamic import to avoid SSR issues
+        const { IExecDataProtector } = await import('@iexec/dataprotector');
+        
+        // Configure DataProtector with TDX support as per docs
+        const dp = new IExecDataProtector(window.ethereum, {
           iexecOptions: {
             smsURL: 'https://sms.labs.iex.ec',  // TDX SMS endpoint
           },
@@ -50,12 +54,11 @@ export default function HomePage() {
       } else {
         setError('Please install MetaMask');
       }
-    } catch (err) {
-      setError('Failed to connect wallet: ' + (err as Error).message);
+    } catch (err: any) {
+      setError('Connection failed: ' + err.message);
     }
   };
 
-  // Process genetic data using corrected backend schema
   const analyzeGenetics = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dataProtector) return;
@@ -66,30 +69,30 @@ export default function HomePage() {
     try {
       console.log('🔬 Starting genetic analysis...');
 
-      // Prepare genetic data matching backend expected schema
+      // Prepare genetic data
       const geneticData: GeneticData = {
+        age: parseInt(formData.age),
+        gender: formData.gender,
         rs1801133: formData.rs1801133.toUpperCase(),
         rs7412: formData.rs7412.toUpperCase(),
         rs429358: formData.rs429358.toUpperCase()
       };
-
       console.log('📊 Genetic data:', geneticData);
 
-      // Step 1: Protect the data with proper schema
-      console.log('🔒 Protecting genomic data...');
+      // Step 1: Protect the data
+      console.log('🔒 Protecting data with DataProtector...');
       const protectedData = await dataProtector.core.protectData({
-        data: geneticData as any, // Type assertion for iExec DataObject compatibility
-        name: `genetic-analysis-${Date.now()}`,
+        data: geneticData,
+        name: `genetic-analysis-${Date.now()}`
       });
-
       console.log('✅ Data protected:', protectedData.address);
 
-      // Step 2: Process in TDX TEE
+      // Step 2: Process in TEE with TDX workerpool
       console.log('🤖 Processing in TDX TEE...');
-      const result: any = await dataProtector.core.processProtectedData({
+      const result = await dataProtector.core.processProtectedData({
         protectedData: protectedData.address,
+        workerpool: 'tdx-labs.pools.iexec.eth',  // TDX workerpool as per docs
         app: process.env.NEXT_PUBLIC_IEXEC_APP_ADDRESS!,
-        workerpool: 'tdx-labs.pools.iexec.eth',  // TDX workerpool
         maxPrice: 0,
         onStatusUpdate: (status: any) => {
           console.log('📊 TEE Status:', status);
@@ -100,298 +103,225 @@ export default function HomePage() {
       });
 
       console.log('✅ Analysis complete:', result);
-      setResults({ result: result });
+      setResults(JSON.stringify(result, null, 2));
 
-    } catch (err) {
-      console.error('❌ Error:', err);
-      setError('Analysis failed: ' + (err as Error).message);
+    } catch (err: any) {
+      setError('Analysis failed: ' + err.message);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Test with public args (no protected data)
-  const testWithPublicArgs = async () => {
-    if (!dataProtector) return;
-
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      console.log('🧪 Testing with public args...');
-      
-      const testArgs = `${formData.rs1801133.toUpperCase()} ${formData.rs7412.toUpperCase()} ${formData.rs429358.toUpperCase()}`;
-      
-      // For testing purposes, we can create a simple task without protected data
-      // This would use the command line args path in your backend
-      console.log('📝 Test args:', testArgs);
-      
-      // This is a simplified test - in practice you'd need to handle this differently
-      setResults({
-        result: `Test mode: Would analyze ${testArgs} using public args pathway`
-      });
-      
-    } catch (err) {
-      console.error('❌ Test error:', err);
-      setError('Test failed: ' + (err as Error).message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Fill sample data
-  const fillSampleData = () => {
-    setFormData({
-      rs1801133: 'AG',
-      rs7412: 'TC',
-      rs429358: 'CT'
-    });
-  };
-
-  // Fill high-risk sample
-  const fillHighRiskSample = () => {
-    setFormData({
-      rs1801133: 'GG',
-      rs7412: 'TT',
-      rs429358: 'GG'
-    });
-  };
+  const fillSample = () => setFormData({ 
+    age: '35',
+    gender: 'male',
+    rs1801133: 'AG', 
+    rs7412: 'TC', 
+    rs429358: 'CT' 
+  });
+  
+  const fillHighRisk = () => setFormData({ 
+    age: '45',
+    gender: 'female',
+    rs1801133: 'GG', 
+    rs7412: 'TT', 
+    rs429358: 'GG' 
+  });
 
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
-      <h1>🧬 PrivateGenome - TDX Genetic Risk Analysis</h1>
-      <p>AI-powered genetic analysis using iExec TDX (Trusted Domain Extensions)</p>
-
-      {!isConnected ? (
-        <div style={{ textAlign: 'center', margin: '40px 0' }}>
-          <h2>Connect Your Wallet</h2>
-          <p>Connect MetaMask to start secure genomic analysis</p>
-          <button 
-            onClick={connectWallet}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-          >
-            🦊 Connect MetaMask
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="text-6xl mb-4">🧬</div>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">PrivateGenome</h1>
+          <p className="text-gray-600">AI-powered genetic risk analysis using iExec TDX</p>
         </div>
-      ) : results ? (
-        <div>
-          <h2>🎉 Analysis Results</h2>
-          <div style={{ 
-            backgroundColor: '#f8f9fa', 
-            padding: '20px', 
-            borderRadius: '8px', 
-            marginBottom: '20px',
-            border: '1px solid #dee2e6'
-          }}>
-            <h3>📊 Genomic Analysis Output</h3>
-            {results.result && (
-              <div style={{ 
-                backgroundColor: '#ffffff', 
-                padding: '15px', 
-                borderRadius: '4px',
-                border: '1px solid #ddd',
-                fontSize: '14px',
-                lineHeight: '1.4',
-                maxHeight: '400px',
-                overflowY: 'auto'
-              }}>
-                {typeof results.result === 'string' ? (
-                  <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
-                    {results.result}
-                  </pre>
-                ) : (
-                  <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
-                    {JSON.stringify(results.result, null, 2)}
-                  </pre>
-                )}
-              </div>
-            )}
-            {results.error && (
-              <div style={{ color: '#dc3545', fontWeight: 'bold' }}>
-                ❌ Error: {results.error}
-              </div>
-            )}
+
+        {!isConnected ? (
+          /* Connect Wallet */
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="text-5xl mb-4">🦊</div>
+            <h2 className="text-2xl font-semibold mb-4">Connect Your Wallet</h2>
+            <p className="text-gray-600 mb-6">Connect MetaMask to start secure genetic analysis</p>
+            <button 
+              onClick={connectWallet}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
+            >
+              Connect MetaMask
+            </button>
           </div>
-
-          <button 
-            onClick={() => setResults(null)}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-          >
-            🔄 Analyze Another Sample
-          </button>
-        </div>
-      ) : (
-        <div>
-          <h2>Enter Genetic Data</h2>
-          <form style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
-                rs1801133 (MTHFR gene - e.g., AA, AG, GG):
-              </label>
-              <input
-                type="text"
-                value={formData.rs1801133}
-                onChange={(e) => setFormData(prev => ({ ...prev, rs1801133: e.target.value }))}
-                required
-                maxLength={2}
-                placeholder="AA"
-                style={{ 
-                  width: '100%', 
-                  padding: '10px', 
-                  border: '1px solid #ccc', 
-                  borderRadius: '4px',
-                  fontSize: '16px'
-                }}
-              />
+        ) : results ? (
+          /* Results */
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="flex items-center mb-6">
+              <div className="text-3xl mr-3">🎉</div>
+              <h2 className="text-2xl font-semibold">Analysis Complete</h2>
             </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
-                rs7412 (APOE gene - e.g., CC, CT, TT):
-              </label>
-              <input
-                type="text"
-                value={formData.rs7412}
-                onChange={(e) => setFormData(prev => ({ ...prev, rs7412: e.target.value }))}
-                required
-                maxLength={2}
-                placeholder="CC"
-                style={{ 
-                  width: '100%', 
-                  padding: '10px', 
-                  border: '1px solid #ccc', 
-                  borderRadius: '4px',
-                  fontSize: '16px'
-                }}
-              />
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <pre className="text-sm overflow-auto max-h-96 whitespace-pre-wrap">
+                {results}
+              </pre>
             </div>
+            <button 
+              onClick={() => setResults(null)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+            >
+              🔄 New Analysis
+            </button>
+          </div>
+        ) : (
+          /* Main Form */
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <h2 className="text-2xl font-semibold mb-6 flex items-center">
+              <span className="text-3xl mr-3">🔬</span>
+              Enter Genetic Data
+            </h2>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
-                rs429358 (APOE gene - e.g., CC, CT, TT):
-              </label>
-              <input
-                type="text"
-                value={formData.rs429358}
-                onChange={(e) => setFormData(prev => ({ ...prev, rs429358: e.target.value }))}
-                required
-                maxLength={2}
-                placeholder="TT"
-                style={{ 
-                  width: '100%', 
-                  padding: '10px', 
-                  border: '1px solid #ccc', 
-                  borderRadius: '4px',
-                  fontSize: '16px'
-                }}
-              />
-            </div>
+            <form onSubmit={analyzeGenetics} className="space-y-6">
+              {/* Age Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Age
+                </label>
+                <input
+                  type="number"
+                  value={formData.age}
+                  onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
+                  placeholder="e.g., 35"
+                  min="18"
+                  max="100"
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-500 font-medium"
+                />
+              </div>
 
-            <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {/* Gender Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Gender
+                </label>
+                <select
+                  value={formData.gender}
+                  onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 font-medium"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+
+              {/* Input Fields */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  rs1801133 (MTHFR gene)
+                </label>
+                <input
+                  type="text"
+                  value={formData.rs1801133}
+                  onChange={(e) => setFormData(prev => ({ ...prev, rs1801133: e.target.value }))}
+                  placeholder="e.g., AA, AG, GG"
+                  maxLength={2}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-500 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  rs7412 (APOE gene)
+                </label>
+                <input
+                  type="text"
+                  value={formData.rs7412}
+                  onChange={(e) => setFormData(prev => ({ ...prev, rs7412: e.target.value }))}
+                  placeholder="e.g., CC, CT, TT"
+                  maxLength={2}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-500 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  rs429358 (APOE gene)
+                </label>
+                <input
+                  type="text"
+                  value={formData.rs429358}
+                  onChange={(e) => setFormData(prev => ({ ...prev, rs429358: e.target.value }))}
+                  placeholder="e.g., CC, CT, TT"
+                  maxLength={2}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-500 font-medium"
+                />
+              </div>
+
+              {/* Sample Data Buttons */}
+              <div className="flex gap-3">
+                <button 
+                  type="button" 
+                  onClick={fillSample}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  📝 Sample Data
+                </button>
+                <button 
+                  type="button" 
+                  onClick={fillHighRisk}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  ⚠️ High Risk Sample
+                </button>
+              </div>
+
+              {/* Submit Button */}
               <button 
-                type="button" 
-                onClick={fillSampleData}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  backgroundColor: '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
+                type="submit"
+                disabled={isProcessing || !formData.age || !formData.rs1801133 || !formData.rs7412 || !formData.rs429358}
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-4 rounded-lg transition-colors disabled:cursor-not-allowed"
               >
-                📝 Fill Sample Data
+                {isProcessing ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Analyzing in TDX TEE...
+                  </span>
+                ) : (
+                  '🧬 Analyze My Genetics'
+                )}
               </button>
-              
-              <button 
-                type="button" 
-                onClick={fillHighRiskSample}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  backgroundColor: '#dc3545',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                ⚠️ Fill High Risk Sample
-              </button>
-            </div>
+            </form>
 
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <button 
-                type="button"
-                onClick={analyzeGenetics}
-                disabled={isProcessing || !formData.rs1801133 || !formData.rs7412 || !formData.rs429358}
-                style={{
-                  flex: 1,
-                  minWidth: '200px',
-                  padding: '12px',
-                  fontSize: '16px',
-                  backgroundColor: isProcessing ? '#6c757d' : '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: isProcessing ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {isProcessing ? '🔒 Processing in TDX...' : '🧬 Analyze with Protected Data'}
-              </button>
+            {/* Error Message */}
+            {error && (
+              <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex">
+                  <div className="text-red-400 text-xl mr-3">❌</div>
+                  <div className="text-red-700">{error}</div>
+                </div>
+              </div>
+            )}
 
-              <button 
-                type="button"
-                onClick={testWithPublicArgs}
-                disabled={isProcessing || !formData.rs1801133 || !formData.rs7412 || !formData.rs429358}
-                style={{
-                  flex: 1,
-                  minWidth: '200px',
-                  padding: '12px',
-                  fontSize: '16px',
-                  backgroundColor: isProcessing ? '#6c757d' : '#ffc107',
-                  color: isProcessing ? 'white' : 'black',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: isProcessing ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {isProcessing ? '🧪 Testing...' : '🧪 Test Mode'}
-              </button>
+            {/* Info Cards */}
+            <div className="mt-8 space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="text-blue-600 text-xl mr-3">🔒</div>
+                  <div>
+                    <h4 className="font-semibold text-blue-900">Privacy Protected</h4>
+                    <p className="text-blue-700 text-sm">Your genetic data is encrypted and processed in Intel TDX hardware</p>
+                  </div>
+                </div>
+              </div>
             </div>
-          </form>
-
-          {error && (
-            <div style={{ 
-              backgroundColor: '#f8d7da', 
-              color: '#721c24', 
-              padding: '12px', 
-              borderRadius: '4px', 
-              marginTop: '16px',
-              border: '1px solid #f5c6cb'
-            }}>
-              ❌ {error}
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
