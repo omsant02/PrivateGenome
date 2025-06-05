@@ -2,6 +2,8 @@
 
 **Private Gnome** is an AI-powered, privacy-first genetic risk analysis platform built for the [EthBelgrade 2025](https://ethbelgrade.rs/) hackathon. It leverages confidential computing (iExec TDX) and decentralized technologies to enable secure, user-controlled genomic analysis—without exposing raw genetic data.
 
+
+We built PrivateGenome from the ground up, developing our own machine learning pipeline tailored for genomic risk prediction. The model was trained from scratch using a synthetic dataset of over 1,600 cleaned genome records enriched with SNP data (like rs1801133, rs7412, rs429358) ensuring high diversity and generalizability. Input genotypes such as "AA", "CT", etc., were carefully encoded to numeric values reflecting biological variation. The entire model runs privately within a Trusted Execution Environment (TEE) using iExec iApp, ensuring secure, tamper-proof predictions on sensitive DNA data. These datas are protected and processed used DataProtector Core.
 ---
 
 ## 🚀 What is Private Gnome?
