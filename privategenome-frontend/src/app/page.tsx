@@ -29,6 +29,7 @@ export default function HomePage() {
         await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
         const { IExecDataProtector } = await import('@iexec/dataprotector');
         
+        // CORRECT TDX configuration with SMS endpoint
         const dp = new IExecDataProtector((window as any).ethereum, {
           iexecOptions: {
             smsURL: 'https://sms.labs.iex.ec',
@@ -55,6 +56,7 @@ export default function HomePage() {
     let protectedDataAddress = '';
 
     try {
+      // Create genetic data matching your iApp's getValue calls
       const geneticData = {
         age: formData.age,
         gender: formData.gender,
@@ -73,6 +75,7 @@ export default function HomePage() {
       protectedDataAddress = protectedData.address;
       console.log('✅ Data protected:', protectedDataAddress);
 
+      // GRANT ACCESS TO THE APP - This was missing!
       console.log('🔑 Granting access to TDX app...');
       await dataProtector.core.grantAccess({
         protectedData: protectedDataAddress,
@@ -81,13 +84,13 @@ export default function HomePage() {
       });
       console.log('✅ Access granted to TDX app');
 
-      console.log('🤖 Calling TEE app with TDX workerpool...');
+      // Now ACTUALLY call your deployed TEE app - try without specifying workerpool
+      console.log('🤖 Calling TEE app (auto-select workerpool)...');
       
       const result = await dataProtector.core.processProtectedData({
         protectedData: protectedDataAddress,
-        workerpool: 'tdx-labs.pools.iexec.eth',
         app: '0xBF08466487a97afC83466E9F793f25150BA73dD5',
-        maxPrice: 10000 
+        maxPrice: 10000
       });
 
       console.log('✅ TEE processing result:', result);
@@ -98,6 +101,7 @@ export default function HomePage() {
         const resultText = await response.text();
         setResults(resultText);
       } else {
+        // If no result location, show the task info
         setResults(`🎉 TEE PROCESSING COMPLETED!
 
 Task ID: ${result.taskId || 'Processing...'}
@@ -113,6 +117,7 @@ TDX App: 0xBF08466487a97afC83466E9F793f25150BA73dD5`);
     } catch (err: any) {
       console.error('TEE processing failed:', err);
       
+      // If TEE call fails, show the error but still show data was protected
       setError(`TEE Processing Error: ${err.message}
 
 ${protectedDataAddress ? `But your data was successfully protected! 
@@ -130,6 +135,7 @@ EXPERIMENTAL_TDX_APP=true iapp run 0xBF08466487a97afC83466E9F793f25150BA73dD5 --
   });
 
   const handleSubmit = () => {
+    // Basic validation
     if (!formData.age || !formData.rs1801133 || !formData.rs7412 || !formData.rs429358) {
       setError('Please fill in all required fields');
       return;
