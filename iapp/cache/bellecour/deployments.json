@@ -1,5 +1,17 @@
 [
   {
+    "sconifiedImage": "omsanto/iapp:0.0.6-tdx-131e527a0e09",
+    "appContractAddress": "0xBF08466487a97afC83466E9F793f25150BA73dD5",
+    "owner": "0xe9a73C6c5b2EfA515DE071dC90005Fb4Be88eaBc",
+    "date": "2025-06-05T06:24:31.750Z"
+  },
+  {
+    "sconifiedImage": "omsanto/iapp:0.0.5-tdx-40f8a6982cfe",
+    "appContractAddress": "0xda067219BdEdaAe8FC73D75402F569436eFA82F5",
+    "owner": "0xe9a73C6c5b2EfA515DE071dC90005Fb4Be88eaBc",
+    "date": "2025-06-05T06:18:43.688Z"
+  },
+  {
     "sconifiedImage": "omsanto/iapp:0.0.4-tdx-5edf2f1789f6",
     "appContractAddress": "0x1Ef1bE18EEEb1890271C41aF5Cf45868B0948FE7",
     "owner": "0xe9a73C6c5b2EfA515DE071dC90005Fb4Be88eaBc",
