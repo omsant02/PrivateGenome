@@ -1,0 +1,21 @@
+{
+  "description": "My iExec resource description, must be at least 150 chars long in order to pass the validation checks. Describe your application, dataset or workerpool to your users",
+  "license": "MIT",
+  "author": "?",
+  "social": {
+    "website": "?",
+    "github": "?"
+  },
+  "logo": "logo.png",
+  "order": {
+    "apporder": {
+      "app": "0xBF08466487a97afC83466E9F793f25150BA73dD5",
+      "appprice": "0",
+      "volume": "1000000",
+      "tag": "0x0000000000000000000000000000000000000000000000000000000000000003",
+      "datasetrestrict": "0x0000000000000000000000000000000000000000",
+      "workerpoolrestrict": "0x0000000000000000000000000000000000000000",
+      "requesterrestrict": "0x0000000000000000000000000000000000000000"
+    }
+  }
+}
