@@ -24,7 +24,6 @@ try:
     age, gender, rs1801133, rs7412, rs429358 = None, None, None, None, None
     data_source = "none"
     
-    # Debug: Print environment variables that might contain args
     print(f"🔍 IEXEC_ARGS: {os.getenv('IEXEC_ARGS')}")
     print(f"🔍 All args: {sys.argv}")
     
@@ -45,9 +44,7 @@ try:
             print(f"❌ Protected data failed: {e}")
             print("📝 Falling back to args or demo mode...")
     
-    # Force processing for TDX demo - check both sys.argv and environment
     if not rs1801133:
-        # Try sys.argv first
         if len(args) >= 3:
             rs1801133 = args[0]
             rs7412 = args[1] 
@@ -57,7 +54,6 @@ try:
             data_source = "args"
             print(f"📝 Using command line args: {rs1801133}, {rs7412}, {rs429358}")
         
-        # Try IEXEC_ARGS environment variable
         elif os.getenv('IEXEC_ARGS'):
             iexec_args = os.getenv('IEXEC_ARGS').strip().split()
             if len(iexec_args) >= 3:
@@ -69,7 +65,6 @@ try:
                 data_source = "iexec_args"
                 print(f"📝 Using IEXEC_ARGS: {rs1801133}, {rs7412}, {rs429358}")
         
-        # For TDX demo - force some sample data if no args detected
         else:
             print("⚠️ No args detected in TDX - using demo data for hackathon")
             rs1801133 = "AG"
@@ -80,7 +75,6 @@ try:
             data_source = "tdx_demo"
             print(f"📝 Using TDX demo data: {rs1801133}, {rs7412}, {rs429358}")
     
-    # Continue with the rest of your existing genetic processing code...
     if rs1801133 and rs7412 and rs429358:
         print(f"🧬 Processing genetic analysis from {data_source}")
         
@@ -102,7 +96,6 @@ try:
             
             print(f"🔢 Encoded genotypes: {encoded1}, {encoded2}, {encoded3}")
             
-            # Simplified risk calculation for demo
             base_risk = (encoded1 * 0.3 + encoded2 * 0.4 + encoded3 * 0.3)
             
             age_factor = 1.0
@@ -197,7 +190,6 @@ Heterozygous: AG, GA, CT, TC, AC, CA, GT, TG, AT, TA
             print(f"❌ Invalid genotype: {e}")
     
     else:
-        # Welcome message (current output)
         result_text = f"""🧬 PRIVATE GENETIC RISK ANALYZER 🧬
 =====================================
 
