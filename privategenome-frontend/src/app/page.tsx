@@ -23,7 +23,6 @@ export default function HomePage() {
     rs429358: ''
   });
 
-  // Define the genetic data interface as per iExec docs
   interface GeneticData {
     age: number;
     gender: string;
@@ -37,13 +36,11 @@ export default function HomePage() {
       if (window?.ethereum) {
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         
-        // Dynamic import to avoid SSR issues
         const { IExecDataProtector } = await import('@iexec/dataprotector');
         
-        // Configure DataProtector with TDX support as per docs
         const dp = new IExecDataProtector(window.ethereum, {
           iexecOptions: {
-            smsURL: 'https://sms.labs.iex.ec',  // TDX SMS endpoint
+            smsURL: 'https://sms.labs.iex.ec',
           },
         });
         
@@ -69,7 +66,6 @@ export default function HomePage() {
     try {
       console.log('🔬 Starting genetic analysis...');
 
-      // Prepare genetic data
       const geneticData: GeneticData = {
         age: parseInt(formData.age),
         gender: formData.gender,
@@ -91,7 +87,7 @@ export default function HomePage() {
       console.log('🤖 Processing in TDX TEE...');
       const result = await dataProtector.core.processProtectedData({
         protectedData: protectedData.address,
-        workerpool: 'tdx-labs.pools.iexec.eth',  // TDX workerpool as per docs
+        workerpool: 'tdx-labs.pools.iexec.eth',
         app: process.env.NEXT_PUBLIC_IEXEC_APP_ADDRESS!,
         maxPrice: 0,
         onStatusUpdate: (status: any) => {
@@ -132,7 +128,6 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">🧬</div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">PrivateGenome</h1>
@@ -140,7 +135,6 @@ export default function HomePage() {
         </div>
 
         {!isConnected ? (
-          /* Connect Wallet */
           <div className="bg-white rounded-xl shadow-lg p-8 text-center">
             <div className="text-5xl mb-4">🦊</div>
             <h2 className="text-2xl font-semibold mb-4">Connect Your Wallet</h2>
@@ -153,7 +147,6 @@ export default function HomePage() {
             </button>
           </div>
         ) : results ? (
-          /* Results */
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="flex items-center mb-6">
               <div className="text-3xl mr-3">🎉</div>
@@ -172,7 +165,6 @@ export default function HomePage() {
             </button>
           </div>
         ) : (
-          /* Main Form */
           <div className="bg-white rounded-xl shadow-lg p-8">
             <h2 className="text-2xl font-semibold mb-6 flex items-center">
               <span className="text-3xl mr-3">🔬</span>
@@ -180,7 +172,6 @@ export default function HomePage() {
             </h2>
 
             <form onSubmit={analyzeGenetics} className="space-y-6">
-              {/* Age Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Age
@@ -197,7 +188,6 @@ export default function HomePage() {
                 />
               </div>
 
-              {/* Gender Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Gender
@@ -213,7 +203,6 @@ export default function HomePage() {
                 </select>
               </div>
 
-              {/* Input Fields */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   rs1801133 (MTHFR gene)
@@ -259,7 +248,6 @@ export default function HomePage() {
                 />
               </div>
 
-              {/* Sample Data Buttons */}
               <div className="flex gap-3">
                 <button 
                   type="button" 
@@ -277,7 +265,6 @@ export default function HomePage() {
                 </button>
               </div>
 
-              {/* Submit Button */}
               <button 
                 type="submit"
                 disabled={isProcessing || !formData.age || !formData.rs1801133 || !formData.rs7412 || !formData.rs429358}
@@ -297,7 +284,6 @@ export default function HomePage() {
               </button>
             </form>
 
-            {/* Error Message */}
             {error && (
               <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="flex">
@@ -307,7 +293,6 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Info Cards */}
             <div className="mt-8 space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start">
